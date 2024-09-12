@@ -1,0 +1,237 @@
+---
+title: "Exploratory Analysis of the Selected mRNA variables"
+author: "Autumn O'Donnell"
+date: "2024-03-21"
+output: word_document
+---
+
+TO DO:
+- Volcano on all BCR data
+- ANOVAs
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The top 10 most frequently selected variables in the four most discriminatory pipelines where further investigated for exploratory analysis.
+
+```{r loading}
+
+# Load Libraries
+library(tidyverse)
+
+# Load Data
+data <- read.csv("combined_preop_data.csv", header = TRUE, row.names = 1)
+```
+
+
+## Exploratory analysis - Volcano Plots
+```{r volcano_all}
+data_all <- data %>%
+  select(7,10:26456)
+
+ps <- numeric(ncol(data_all) - 1)
+  for(i in 1:length(ps)){
+    o = t.test(2^data_all[,i+1]~data_all$BCR_Event)
+    ps[i] = o$p.value
+  }
+ps <- p.adjust(ps, method = "BH")
+
+sum_dat <- data_all %>%
+  group_by(BCR_Event) %>%
+  summarise(across(everything(), mean))
+sum_dat <- as.data.frame(t(sum_dat))
+
+colnames(sum_dat) <- c("no_BCR", "BCR")
+sum_dat <- sum_dat[-1,]
+sum_dat <- sum_dat %>% tibble::rownames_to_column("mRNA")
+sum_dat <- sum_dat %>%
+  mutate(BCR = 2^BCR,
+         no_BCR = 2^no_BCR,
+         fc = log2((BCR)/(no_BCR)),
+         ps = -log10(ps)) %>%
+  select(-no_BCR, -BCR)
+
+sp_genes <- c("FAP", "GRM8", "DNAH8", "SPAG1", "ARMC4", "ESM1", "DUSP18", "ABCC11", "ERO1LB", "FAM122C", "HELB", "SLC16A14", "PLA2R1", "NEU3", "EFCAB4B", "ZHX3", "FZD5", "SOCS2", "PI15", "CD38", "XBP1")
+
+genes <- sum_dat %>%
+  filter(mRNA %in% sp_genes) 
+
+# Create a simple volcano plot
+vol_plot <- sum_dat %>%
+  ggplot(aes(x = fc,
+             y = ps)) + 
+  geom_point() 
+
+all_vol<- vol_plot + geom_point(colour = "grey", alpha = 0.5) +
+  geom_point(data = genes, # New layer containing data subset genes       
+             size = 2,
+             shape = 21,
+             fill = "firebrick",
+             colour = "black") +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed") + 
+  geom_vline(xintercept = c(-1, 1),
+             linetype = "dashed") +
+  ggrepel::geom_label_repel(data = genes[], # Add labels last to appear as the top layer  
+                   aes(label = mRNA),
+                   force = 2,
+                   nudge_y = 1)+
+  xlim(-2,2) + ggtitle("Volcano Plot of BCR-Free Survival") +
+  xlab(bquote(log[2]('Fold Change'))) + ylab(bquote(-log[10]('p value'))) +
+  theme(title =element_text(size=20, face='bold'),
+        axis.title = element_text(size = 20), axis.text=element_text(size=20))
+
+
+```
+
+```{r volcano3}
+data_3 <- data %>%
+  select(6,7,10:26456) %>%
+  mutate(status_3 = ifelse(BCR_FreeTime >= 36, 0,
+                           ifelse(BCR_FreeTime < 36 & BCR_Event == 1, 1, NA))) %>%
+  filter(!is.na(status_3)) %>%
+  #mutate(status_3 = as.factor(status_3)) %>%
+  select(-BCR_FreeTime, - BCR_Event)
+
+ps <- numeric(ncol(data_3) - 1)
+  for(i in 1:length(ps)){
+    o = t.test(2^data_3[,i]~data_3$status_3)
+    ps[i] = o$p.value
+  }
+ps <- p.adjust(ps, method = "BH")
+
+sum_dat <- data_3 %>%
+  group_by(status_3) %>%
+  summarise(across(everything(), mean))
+sum_dat <- as.data.frame(t(sum_dat))
+
+colnames(sum_dat) <- c("no_BCR", "BCR")
+sum_dat <- sum_dat[-1,]
+sum_dat <- sum_dat %>% tibble::rownames_to_column("mRNA")
+sum_dat <- sum_dat %>%
+  mutate(BCR = 2^BCR,
+         no_BCR = 2^no_BCR,
+         fc = log2((BCR)/(no_BCR)),
+         ps = -log10(ps)) %>%
+  select(-no_BCR, -BCR)
+
+sp_genes <- c("FAP", "GRM8", "DNAH8", "SPAG1", "ARMC4", "ESM1", "DUSP18", "ABCC11", "ERO1LB", "FAM122C", "HELB", "SLC16A14", "PLA2R1", "NEU3", "EFCAB4B", "ZHX3", "FZD5", "SOCS2", "PI15", "CD38", "XBP1")
+
+genes <- sum_dat %>%
+  filter(mRNA %in% sp_genes) 
+
+# Create a simple volcano plot
+vol_plot3 <- sum_dat %>%
+  ggplot(aes(x = fc,
+             y = ps)) + 
+  geom_point() 
+
+vol_plot3 + geom_point(colour = "grey", alpha = 0.5) +
+  geom_point(data = genes, # New layer containing data subset genes       
+             size = 2,
+             shape = 21,
+             fill = "firebrick",
+             colour = "black") +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed") + 
+  geom_vline(xintercept = c(-1, 1),
+             linetype = "dashed") +
+  ggrepel::geom_label_repel(data = genes[], # Add labels last to appear as the top layer  
+                   aes(label = mRNA),
+                   force = 2,
+                   nudge_y = 1)+
+  xlim(-2,2) + ggtitle("Volcano Plot of 3 year Survival") +
+  xlab(bquote(log[2]('Fold Change'))) + ylab(bquote(-log[10]('p value'))) +
+  theme(title =element_text(size=20, face='bold'),
+        axis.title = element_text(size = 20), axis.text=element_text(size=20))
+
+
+```
+
+```{r volcano5}
+data_5 <- data %>%
+  select(6,7,10:26456) %>%
+  mutate(status_5 = ifelse(BCR_FreeTime >= 60, 0,
+                           ifelse(BCR_FreeTime < 60 & BCR_Event == 1, 1, NA))) %>%
+  filter(!is.na(status_5)) %>%
+  #mutate(status_5 = as.factor(status_5)) %>%
+  select(-BCR_FreeTime, - BCR_Event)
+
+ps <- numeric(ncol(data_5) - 1)
+  for(i in 1:length(ps)){
+    o = t.test(2^data_5[,i]~data_5$status_5)
+    ps[i] = o$p.value
+  }
+#ps <- p.adjust(ps, method = "fdr")
+
+sum_dat <- data_5 %>%
+  group_by(status_5) %>%
+  summarise(across(everything(), mean))
+sum_dat <- as.data.frame(t(sum_dat))
+
+colnames(sum_dat) <- c("no_BCR", "BCR")
+sum_dat <- sum_dat[-1,]
+sum_dat <- sum_dat %>% tibble::rownames_to_column("mRNA")
+sum_dat <- sum_dat %>%
+  mutate(BCR = 2^BCR,
+         no_BCR = 2^no_BCR,
+         fc = log2((BCR)/(no_BCR)),
+         ps = -log10(ps)) %>%
+  select(-no_BCR, -BCR)
+
+sp_genes <- c("FAP", "GRM8", "DNAH8", "SPAG1", "ARMC4", "ESM1", "DUSP18", "ABCC11", "ERO1LB", "FAM122C", "HELB", "SLC16A14", "PLA2R1", "NEU3", "EFCAB4B", "ZHX3", "FZD5", "SOCS2", "PI15", "CD38", "XBP1")
+
+genes <- sum_dat %>%
+  filter(mRNA %in% sp_genes) 
+
+# Create a simple volcano plot
+vol_plot5 <- sum_dat %>%
+  ggplot(aes(x = fc,
+             y = ps)) + 
+  geom_point() 
+
+vol_plot5 + geom_point(colour = "grey", alpha = 0.5) +
+  geom_point(data = genes, # New layer containing data subset genes       
+             size = 2,
+             shape = 21,
+             fill = "firebrick",
+             colour = "black") +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed") + 
+  geom_vline(xintercept = c(-0.5, 0.5),
+             linetype = "dashed") +
+  ggrepel::geom_label_repel(data = genes[], # Add labels last to appear as the top layer  
+                   aes(label = mRNA),
+                   force = 2,
+                   nudge_y = 1)+
+  xlim(-2,2) + ggtitle("Volcano Plot of 5 year Survival") +
+  xlab(bquote(log[2]('Fold Change'))) + ylab(bquote(-log[10]('p value'))) +
+  theme(title =element_text(size=20, face='bold'),
+        axis.title = element_text(size = 20), axis.text=element_text(size=20))
+
+
+```
+
+## Exploratory Analaysis - AVOVA
+```{r ANOVA_stage}
+data_genes <- data %>% select(1:9, "FAP", "GRM8", "DNAH8", "SPAG1", "ARMC4", "ESM1", "DUSP18", "ABCC11", "ERO1LB", "FAM122C", "HELB", "SLC16A14", "PLA2R1", "NEU3", "EFCAB4B", "ZHX3", "FZD5", "SOCS2", "PI15", "CD38", "XBP1")
+
+cs_pvalue <- c()
+bg_pvalue <- c()
+race_pvalue <- c()
+
+for(i in 1:length(sp_genes)){
+  cs <- aov(data_genes[,i+9] ~ as.factor(clin_stage), data = data_genes)
+  bg <- aov(data_genes[,i+9] ~ as.factor(BxGGS), data = data_genes)
+  race <- aov(data_genes[,i+9] ~ as.factor(Race), data = data_genes)
+  cs_pvalue[i] <- summary(cs)[[1]][["Pr(>F)"]][1]
+  bg_pvalue[i] <- summary(bg)[[1]][["Pr(>F)"]][1]
+  race_pvalue[i] <- summary(race)[[1]][["Pr(>F)"]][1]
+  names(cs_pvalue)[i] = names(bg_pvalue)[i] = names(race_pvalue)[i] = sp_genes[i]
+}
+
+p.adjust(cs_pvalue,method="BH") # Nothing statistically significant
+p.adjust(bg_pvalue,method="BH") # FAP = 0.020, GRM8 = 0.042, ESM1 = 0.021, PLA2R1 = 0.021, EFCAN4B = 0.042, FZD5 = 0.003, PI15 = 0.003, CD38 = 0.042
+p.adjust(race_pvalue,method="BH") # SLC16A14 = 0.004
+```
