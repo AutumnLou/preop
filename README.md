@@ -3,6 +3,9 @@ Pre-operative prediction of BCR-free survival in PCa using ML method and mRNA da
 
 ## Key
 Models:
+
+msk = Memorial Sloan Kettering Cancer Center model
+
 cox = Cox proportional hazards model
 
 las = LASSO Cox model
@@ -13,6 +16,7 @@ rsf = Random Survival Forest model
 
 
 Variables:
+
 co = clinical variables only
 
 comb = Both clinical and mRNA variables
