@@ -2,7 +2,7 @@
 Pre-operative prediction of BCR-free survival in PCa using ML method and mRNA data.
 
 ## DOI
-DOI: 10.5281/zenodo.13790080
+[![DOI](https://zenodo.org/badge/856328533.svg)](https://zenodo.org/doi/10.5281/zenodo.13790079)
 
 ## Key
 Models:
