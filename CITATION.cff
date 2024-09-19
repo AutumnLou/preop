@@ -1,0 +1,9 @@
+version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: O'Donnell
+  given-names: Autumn
+orcid: https://orcid.org/0000-0002-4787-7462
+title: Pre-operative prediction of BCR-free survival with mRNA variables in prostate cancer
+version: v1.0.0
+date-released: 2024-09-19
